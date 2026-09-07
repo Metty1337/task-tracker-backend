@@ -5,6 +5,7 @@ import metty1337.task.tracker.backend.security.TokenService;
 import metty1337.task.tracker.backend.test.ProtectedTestController;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -21,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -29,7 +31,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UserController.class)
-@Import({SecurityConfiguration.class, ProtectedTestController.class})
+@Import({SecurityConfiguration.class, ProtectedTestController.class, UserService.class})
 @TestPropertySource(properties = "app.jwt.secret=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
 class UserControllerTests {
     @Autowired
@@ -38,6 +40,82 @@ class UserControllerTests {
     JwtEncoder encoder;
     @MockitoBean
     RegistrationService registrations;
+    @MockitoBean
+    UserRepository users;
+
+    @Test
+    void returnsOnlyCurrentUserIdAndEmail() throws Exception {
+        User user = mock(User.class);
+        when(user.getId()).thenReturn(1L);
+        when(user.getEmail()).thenReturn("my@email.com");
+        when(users.findById(1L)).thenReturn(Optional.of(user));
+        String token = new TokenService(encoder, Duration.ofHours(1)).issue(1L);
+        mvc.perform(get("/user").param("id", "2").param("email", "other@email.com")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.email").value("my@email.com"));
+        verify(users).findById(1L);
+        verifyNoMoreInteractions(users);
+    }
+
+    @Test
+    void rejectsCurrentUserWithoutAuthentication() throws Exception {
+        mvc.perform(get("/user"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(header().string("WWW-Authenticate", "Bearer"))
+                .andExpect(jsonPath("$.message").value("Authentication required"));
+        verifyNoInteractions(users);
+    }
+
+    @Test
+    void rejectsExpiredCurrentUserToken() throws Exception {
+        mvc.perform(get("/user").header("Authorization", "Bearer " + signedToken("1", Instant.now().minusSeconds(3600))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Authentication required"));
+        verifyNoInteractions(users);
+    }
+
+    @Test
+    void rejectsInvalidCurrentUserToken() throws Exception {
+        mvc.perform(get("/user").header("Authorization", "Bearer invalid"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Authentication required"));
+        verifyNoInteractions(users);
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"abc", "0", "-1", "9223372036854775808"})
+    void rejectsInvalidCurrentUserSubject(String subject) throws Exception {
+        mvc.perform(get("/user").header("Authorization", "Bearer " + signedToken(subject, Instant.now().plusSeconds(3600))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("WWW-Authenticate", "Bearer"))
+                .andExpect(jsonPath("$.message").value("Authentication required"));
+        verifyNoInteractions(users);
+    }
+
+    @Test
+    void rejectsUserMissingFromDatabase() throws Exception {
+        when(users.findById(1L)).thenReturn(Optional.empty());
+        mvc.perform(get("/user").header("Authorization", "Bearer " + signedToken("1", Instant.now().plusSeconds(3600))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("WWW-Authenticate", "Bearer"))
+                .andExpect(jsonPath("$.message").value("Authentication required"));
+    }
+
+    private String signedToken(String subject, Instant expiresAt) {
+        JwtClaimsSet.Builder claims = JwtClaimsSet.builder().issuer(TokenService.ISSUER)
+                .issuedAt(Instant.now().minusSeconds(7200)).expiresAt(expiresAt);
+        if (subject != null) {
+            claims.subject(subject);
+        }
+        return encoder.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(),
+                claims.build())).getTokenValue();
+    }
 
     @Test
     void acceptsJsonAndReturnsTokenHeader() throws Exception {

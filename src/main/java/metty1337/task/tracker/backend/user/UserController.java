@@ -5,7 +5,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,14 +16,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class UserController {
     private final RegistrationService registrations;
+    private final UserService currentUsers;
+
+    @GetMapping(value = "/user", produces = MediaType.APPLICATION_JSON_VALUE)
+    public UserResponse currentUser(@AuthenticationPrincipal Jwt jwt) {
+        return currentUsers.getCurrentUser(jwt.getSubject());
+    }
 
     @PostMapping(value = "/user", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> registerJson(@Valid @RequestBody RegistrationRequest request) {
-        return register(request);
-    }
-
-    @PostMapping(value = "/user", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ResponseEntity<Void> registerForm(@Valid @ModelAttribute RegistrationRequest request) {
         return register(request);
     }
 

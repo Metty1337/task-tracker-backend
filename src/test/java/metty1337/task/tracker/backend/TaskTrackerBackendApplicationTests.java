@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,6 +17,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -26,6 +28,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(properties = {
         "app.jwt.secret=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
@@ -34,6 +39,7 @@ import static org.mockito.Mockito.*;
         "spring.kafka.admin.auto-create=false"
 })
 @Testcontainers(disabledWithoutDocker = true)
+@AutoConfigureMockMvc
 class TaskTrackerBackendApplicationTests {
     @Container
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:17-alpine");
@@ -47,6 +53,8 @@ class TaskTrackerBackendApplicationTests {
 
     @Autowired
     RegistrationService registrations;
+    @Autowired
+    MockMvc mvc;
     @Autowired
     UserRepository users;
     @Autowired
@@ -66,6 +74,20 @@ class TaskTrackerBackendApplicationTests {
     void cleanDatabase() {
         jdbc.update("DELETE FROM email_outbox");
         users.deleteAll();
+    }
+
+    @Test
+    void returnsDatabaseUserForEachToken() throws Exception {
+        String aliceToken = registrations.register(new RegistrationRequest("alice@example.com", "password-123"));
+        String bobToken = registrations.register(new RegistrationRequest("bob@example.com", "password-456"));
+        for (String token : new String[]{aliceToken, bobToken}) {
+            long id = Long.parseLong(decoder.decode(token).getSubject());
+            mvc.perform(get("/user").header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(2))
+                    .andExpect(jsonPath("$.id").value(id))
+                    .andExpect(jsonPath("$.email").value(token.equals(aliceToken) ? "alice@example.com" : "bob@example.com"));
+        }
     }
 
     @Test

@@ -19,6 +19,13 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(exception.getMessage()));
     }
 
+    @ExceptionHandler(CurrentUserUnavailableException.class)
+    public ResponseEntity<ErrorResponse> currentUserUnavailable(CurrentUserUnavailableException exception) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .header(HttpHeaders.WWW_AUTHENTICATE, "Bearer")
+                .body(new ErrorResponse(exception.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> unexpected(Exception exception) {
         logger.error("Request failed", exception);
