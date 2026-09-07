@@ -1,4 +1,4 @@
-package metty1337.tasktrackerbackend;
+package metty1337.task.tracker.backend;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

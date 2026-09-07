@@ -1,10 +1,18 @@
 HELP.md
+.env
+secret.env
+.env.*
+!.env.example
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
-
+AGENTS.md
+.codex
+.agents
+scripts
+docs
 ### STS ###
 .apt_generated
 .classpath

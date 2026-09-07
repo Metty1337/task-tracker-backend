@@ -1,0 +1,8 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1-users-and-email-outbox
+      author: task-tracker
+      changes:
+        - sqlFile:
+            path: 001-users.sql
+            relativeToChangelogFile: true
