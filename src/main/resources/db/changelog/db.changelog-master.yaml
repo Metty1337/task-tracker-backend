@@ -6,3 +6,10 @@ databaseChangeLog:
         - sqlFile:
             path: 001-users.sql
             relativeToChangelogFile: true
+  - changeSet:
+      id: 2-tasks
+      author: task-tracker
+      changes:
+        - sqlFile:
+            path: 002-tasks.sql
+            relativeToChangelogFile: true
