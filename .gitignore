@@ -8,10 +8,16 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
-AGENTS.md
-.codex
+!.codex/config.toml
+!.codex/hooks.json
+.codex-work/
 .agents
-scripts
+scripts/*
+!scripts/README.md
+!scripts/check-startup.ps1
+!scripts/notify-codex-finished.ps1
+!scripts/codex_git_flow.py
+!scripts/test_codex_git_flow.py
 docs
 ### STS ###
 .apt_generated
