@@ -29,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -74,6 +75,25 @@ class TaskTrackerBackendApplicationTests {
     void cleanDatabase() {
         jdbc.update("DELETE FROM email_outbox");
         users.deleteAll();
+    }
+
+    @Test
+    void logsInRegisteredUserWithoutCreatingUserOrEmail() throws Exception {
+        registrations.register(new RegistrationRequest("alice@example.com", "password-123"));
+        String authorization = mvc.perform(post("/auth/login")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":" ALICE@example.com ","password":"password-123"}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getHeader("Authorization");
+        assertThat(authorization).startsWith("Bearer ");
+        mvc.perform(get("/user").header("Authorization", authorization))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(users.findByEmail("alice@example.com").orElseThrow().getId()))
+                .andExpect(jsonPath("$.email").value("alice@example.com"));
+        assertThat(users.count()).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM email_outbox", Long.class)).isEqualTo(1);
     }
 
     @Test
