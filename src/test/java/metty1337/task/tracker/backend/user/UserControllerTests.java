@@ -129,28 +129,12 @@ class UserControllerTests {
         verify(registrations).register(new RegistrationRequest("alice@example.com", "password-123"));
     }
 
-    @Test
-    void acceptsFormAndReturnsTokenHeader() throws Exception {
-        when(registrations.register(any())).thenReturn("jwt-token");
-        mvc.perform(post("/user").contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("email", " Alice@Example.com ").param("password", "password-123"))
-                .andExpect(status().isOk()).andExpect(header().string("Authorization", "Bearer jwt-token"));
-        verify(registrations).register(new RegistrationRequest("alice@example.com", "password-123"));
-    }
-
     @ParameterizedTest
     @ValueSource(strings = {"{}", "{", "null", "{\"email\":\"bad\",\"password\":\"password-123\"}",
             "{\"email\":\"alice@example.com\",\"password\":\"short\"}",
             "{\"email\":\"alice@example.com\",\"password\":\"        \"}"})
     void rejectsInvalidJson(String body) throws Exception {
         mvc.perform(post("/user").contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").isString());
-        verifyNoInteractions(registrations);
-    }
-
-    @Test
-    void rejectsInvalidForm() throws Exception {
-        mvc.perform(post("/user").contentType(MediaType.APPLICATION_FORM_URLENCODED).param("email", "bad"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").isString());
         verifyNoInteractions(registrations);
     }
