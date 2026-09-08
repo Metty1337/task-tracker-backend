@@ -40,4 +40,14 @@ public class Task {
         this.description = description;
         this.owner = Objects.requireNonNull(owner);
     }
+
+    public void update(String title, String description, TaskStatus status) {
+        this.title = Objects.requireNonNull(title);
+        this.description = description;
+        Objects.requireNonNull(status);
+        if (this.status != status) {
+            this.completedAt = status == TaskStatus.COMPLETED ? Instant.now() : null;
+        }
+        this.status = status;
+    }
 }

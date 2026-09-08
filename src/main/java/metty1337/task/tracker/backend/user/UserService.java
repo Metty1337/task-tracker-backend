@@ -11,6 +11,12 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public UserResponse getCurrentUser(String subject) {
+        User user = requireCurrentUser(subject);
+        return new UserResponse(user.getId(), user.getEmail());
+    }
+
+    @Transactional(readOnly = true)
+    public User requireCurrentUser(String subject) {
         long userId;
         try {
             userId = Long.parseLong(subject);
@@ -20,7 +26,6 @@ public class UserService {
         if (userId <= 0) {
             throw new CurrentUserUnavailableException();
         }
-        User user = users.findById(userId).orElseThrow(CurrentUserUnavailableException::new);
-        return new UserResponse(user.getId(), user.getEmail());
+        return users.findById(userId).orElseThrow(CurrentUserUnavailableException::new);
     }
 }

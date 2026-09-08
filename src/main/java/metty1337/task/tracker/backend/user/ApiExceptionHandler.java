@@ -1,6 +1,7 @@
 package metty1337.task.tracker.backend.user;
 
 import metty1337.task.tracker.backend.auth.InvalidCredentialsException;
+import metty1337.task.tracker.backend.task.TaskNotFoundException;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,11 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     public record ErrorResponse(String message) {
+    }
+
+    @ExceptionHandler(TaskNotFoundException.class)
+    public ResponseEntity<ErrorResponse> taskNotFound(TaskNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(exception.getMessage()));
     }
 
     @ExceptionHandler(DuplicateEmailException.class)
