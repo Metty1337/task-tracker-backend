@@ -11,8 +11,6 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
-import java.time.Instant;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -33,7 +31,7 @@ class TaskPersistenceTests {
     EntityManager entityManager;
 
     @Test
-    void persistsMultipleTasksForOwnerAndCompletionChanges() {
+    void persistsMultipleTasksForOwner() {
         User owner = new User("owner@example.com", "hash");
         entityManager.persist(owner);
         String description = "Long description ".repeat(100);
@@ -50,17 +48,6 @@ class TaskPersistenceTests {
         assertThat(task.getCompletedAt()).isNull();
         assertThat(entityManager.createQuery("select count(t) from Task t where t.owner.id = :ownerId", Long.class)
                 .setParameter("ownerId", ownerId).getSingleResult()).isEqualTo(2L);
-
-        Instant completedAt = Instant.parse("2026-09-08T12:00:00Z");
-        task.complete(completedAt);
-        task = reload(task);
-        assertThat(task.getStatus()).isEqualTo(TaskStatus.COMPLETED);
-        assertThat(task.getCompletedAt()).isEqualTo(completedAt);
-
-        task.reopen();
-        task = reload(task);
-        assertThat(task.getStatus()).isEqualTo(TaskStatus.TODO);
-        assertThat(task.getCompletedAt()).isNull();
     }
 
     @Test

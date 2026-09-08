@@ -40,14 +40,4 @@ public class Task {
         this.description = description;
         this.owner = Objects.requireNonNull(owner);
     }
-
-    public void complete(Instant completedAt) {
-        this.completedAt = Objects.requireNonNull(completedAt);
-        this.status = TaskStatus.COMPLETED;
-    }
-
-    public void reopen() {
-        this.status = TaskStatus.TODO;
-        this.completedAt = null;
-    }
 }
