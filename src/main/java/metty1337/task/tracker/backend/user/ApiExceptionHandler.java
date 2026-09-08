@@ -1,5 +1,7 @@
 package metty1337.task.tracker.backend.user;
 
+import metty1337.task.tracker.backend.auth.InvalidCredentialsException;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -21,6 +23,13 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(CurrentUserUnavailableException.class)
     public ResponseEntity<ErrorResponse> currentUserUnavailable(CurrentUserUnavailableException exception) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .header(HttpHeaders.WWW_AUTHENTICATE, "Bearer")
+                .body(new ErrorResponse(exception.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ErrorResponse> invalidCredentials(InvalidCredentialsException exception) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .header(HttpHeaders.WWW_AUTHENTICATE, "Bearer")
                 .body(new ErrorResponse(exception.getMessage()));
