@@ -1,6 +1,6 @@
 package metty1337.task.tracker.backend.config;
 
-import metty1337.task.tracker.backend.email.EmailPublisher;
+import metty1337.task.tracker.backend.service.EmailPublisher;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

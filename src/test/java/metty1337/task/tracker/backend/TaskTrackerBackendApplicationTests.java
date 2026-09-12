@@ -1,9 +1,20 @@
 package metty1337.task.tracker.backend;
 
-import metty1337.task.tracker.backend.email.EmailOutbox;
-import metty1337.task.tracker.backend.email.EmailOutbox.EmailRequest;
-import metty1337.task.tracker.backend.email.EmailPublisher;
-import metty1337.task.tracker.backend.user.*;
+import metty1337.task.tracker.backend.dto.RegistrationRequest;
+
+import metty1337.task.tracker.backend.service.RegistrationService;
+
+import metty1337.task.tracker.backend.entity.User;
+
+import metty1337.task.tracker.backend.entity.Task;
+
+import metty1337.task.tracker.backend.repository.UserRepository;
+
+import metty1337.task.tracker.backend.exception.DuplicateEmailException;
+
+import metty1337.task.tracker.backend.service.EmailOutbox;
+import metty1337.task.tracker.backend.dto.EmailRequest;
+import metty1337.task.tracker.backend.service.EmailPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
